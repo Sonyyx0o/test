@@ -1,3 +1,6 @@
+if _USERNAME then
+    client.color_log(255, 255, 255, "Hello, " .. _USERNAME)
+end
 local ffi = require 'ffi'
 local vector = require 'vector'
 
@@ -18043,4 +18046,5 @@ local render do
             end
         end
     end
+
 end
