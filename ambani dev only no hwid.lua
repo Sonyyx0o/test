@@ -1,3 +1,6 @@
+if _USERNAME then
+    client.color_log(255, 255, 255, "Hello, " .. _USERNAME)
+end
 local uitbl = ui
 local entitytbl = entity
 local clienttbl = client
@@ -1641,3 +1644,4 @@ return (function(script)
         end
     end
 end)(tbl)
+
