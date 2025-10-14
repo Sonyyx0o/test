@@ -1,3 +1,6 @@
+if _USERNAME then
+    client.color_log(255, 255, 255, "Hello, " .. _USERNAME)
+end
 local ffi = require 'ffi'
 local vector = require 'vector'
 local inspect = require 'gamesense/inspect'
@@ -225,4 +228,5 @@ ui.set_callback(master_switch, interface_callback)
 interface_callback(master_switch)
 
 setup_recharge_dt()
+
 setup_issue_mode()
