@@ -1,4 +1,5 @@
--- Nocthra script @Sonyyx
+-- Nocthra adm1n.lua
+-- Nocthra script
 
 local fromdb = {username = 's'} 
 
@@ -15,6 +16,8 @@ local function mcopy (o)
 	if type(o) ~= "table" then return o end
 	local res = {} for k, v in pairs(o) do res[mcopy(k)] = mcopy(v) end return res
 end
+
+-- ... остальной код без изменений
 
 local table, math, string = mcopy(table), mcopy(math), mcopy(string)
 local ui, client = mcopy(ui), mcopy(client)
@@ -792,6 +795,7 @@ methods_mt.element = {
 				local check = function () elemence.dependant(depend, this, disabler) end
 				check()
 
+				registry[v[1].ref].callbacks[#registry[v[1].ref].callbacks+1] = check
 			end
 		end
 
@@ -1243,86 +1247,105 @@ local Vars = {
             getzeus_second_accent_color = group:label('Arrows  »  Second color\nGT', { 255, 255, 255 })
         },
 
-        alt_watermark = group:combobox('•  Watermark', {'Simple', 'Modern'}),
+        branded_watermark = group:checkbox('•  Branded watermark', {142, 165, 229, 85}),
+
+        alt_watermark = group:combobox('•  Alternative watermark', {'Simple', 'Modern'}),
         alt_watermark_settings = {
-            color = group:color_picker('•  Position', 142, 165, 229, 85),
-            pos = group:combobox('•  Position', {'Bottom', 'Left', 'Right'}),
-            nosp = group:checkbox('•  Remove spaces'),
+            color = group:color_picker('Alt  »  Position', 142, 165, 229, 85),
+            pos = group:combobox('Alt  »  Position', {'Bottom', 'Left', 'Right'}),
+            nosp = group:checkbox('Alt  »  Remove spaces'),
         },
 
         crosshair_hitlog = _DEBUG and group:checkbox('•  Crosshair logger') or nil,
         crosshair_settings = 
         _DEBUG and {
-            move = group:checkbox('Move with scope'),
-            hit_color = group:label('Hit', { 142, 165, 255 }),
-            miss_color = group:label('Miss', { 255, 180, 0 }),    
+            move = group:checkbox('Crosshair  »  Move with scope'),
+            hit_color = group:label('Crosshair  »  Hit color', { 142, 165, 255 }),
+            miss_color = group:label('Crosshair  »  Miss color', { 255, 180, 0 }),    
         } or nil,
 
         hitlog_console = _DEBUG and group:checkbox('•  Console logger') or nil,
         hitlogger_settings = 
         _DEBUG and {
-            prefix_color = group:label('Prefix', { 142, 165, 255 }),
-            hit_color = group:label('Hit', { 159, 202, 43 }),
-            miss_color = group:label('Miss', { 255, 180, 0 }),    
+            prefix_color = group:label('Console  »  Prefix color', { 142, 165, 255 }),
+            hit_color = group:label('Console  »  Hit color', { 159, 202, 43 }),
+            miss_color = group:label('Console  »  Miss color', { 255, 180, 0 }),    
         } or nil,
 
         show_hitrate = group:checkbox('•  Show hitrate'),
         reset_hitrate = group:button('Reset hitrate', function() end),
 	
         group:label(' '),
-        group:label('Miscellaneous'),
+        group:label('[\vnocthra\r] Miscellaneous'),
         
         fast_ladder = group:checkbox('•  Fast ladder'),
         fast_ladder_settings = {
-            group:multiselect('•  Settings' , {'Ascending', 'Descending'})
+            group:multiselect('Fast ladder  »  Settings' , {'Ascending', 'Descending'})
         },
         chat_spammer = group:checkbox('•  Chat spammer'),
         deathsay = group:checkbox('•  On death spammer'),
         
         anim_breakers = group:checkbox('\aB6B665FF•  Animation breakers'),
         anim_breakers_settings = {
-            breaked_legs = group:combobox('•  Breaked legs', {'Disabled', 'Static', 'Jitter', 'Allah', 'Blend'}),
-            air = group:combobox('•  Air legs', {'Disabled', 'Static', 'Haram'}),
-            pitch = group:checkbox('•  Pitch on land')
+            breaked_legs = group:combobox('Animations  »  Breaked legs', {'Disabled', 'Static', 'Jitter', 'Allah', 'Blend'}),
+            air = group:combobox('Animations  »  Air legs', {'Disabled', 'Static', 'Haram'}),
+            pitch = group:checkbox('Animations  »  Pitch on land')
         },
 
+        -- ТОЛЬКО RESOLVER И PREDICT В САМОМ НИЗУ
         smart_resolver = group:checkbox('•  Smart resolver'),
         prediction = group:checkbox('•  Prediction')
     },
 
     AA = {
-        group:label('Settings'),
-        enable = group:checkbox('•  Enable anti-aims'),
-        edge_yaw = group:checkbox('•  Edge yaw', 0x00),
-        freestanding = group:checkbox('•  Freestanding', 0x00),
-        avoid_backstab = _DEBUG and group:checkbox('•  Avoid backstab') or nil,
-        manuals = {
-            enable = group:checkbox('•  Enable manuals'),
-            left = group:label('Left', 0x00),
-            right = group:label('Right', 0x00),
-            manuals_over_fs = group:checkbox('Disable FS on manual'),
-        }, 
+		group:label('[\vnocthra\r] Settings'),
+		enable = group:checkbox('•  Enable anti-aims'),
+		edge_yaw = group:checkbox('•  Edge yaw', 0x00),
+		freestanding = group:checkbox('•  Freestanding', 0x00),
+		avoid_backstab = _DEBUG and group:checkbox('•  Avoid backstab') or nil,
+		manuals = {
+			enable = group:checkbox('•  Enable manuals'),
+			left = group:label('Manuals  »  Left side', 0x00),
+			right = group:label('Manuals  »  Right side', 0x00),
+			reset = group:label('Manuals  »  Reset sides', 0x00),
+			inverter = group:checkbox('Manuals  »  Inverter'),
+			manuals_over_fs = group:checkbox('Manuals  »  Over FS'),
+			lag_options = group:combobox('Manuals  »  Force defensive\nmanuals' , {'Default', 'Always on'}),
+			defensive_aa = group:checkbox('Manuals  »  Defensive AA\nmanuals'),
+			defensive_pitch = group:combobox('Manuals  »  Pitch\ndefensive_pitch\nmanuals', {'Disabled', 'Up', 'Zero', 'Random', 'Custom'}),
+			pitch_slider = group:slider('\ncustom_defensive_pitch\nmanuals', -89, 89, 0),
+			defensive_yaw = group:combobox('Manuals  »  Yaw\ndefensive_yaw\nmanuals', {'Disabled', 'Sideways', 'Opposite', 'Random', 'Spin', '3-Way', '5-Way', 'Custom'}),
+			yaw_slider = group:slider('\ncustom_defensive_yaw\nmanuals', -180, 180, 0)
+		
+		},
 
-        safe_functions = {
-            enable = group:checkbox('•  Enable safe functions'),
-            settings = group:multiselect('Safe  »  Functions', table.filter {_DEBUG and 'Head' or nil, 'Knife', 'Zeus'}),
-            head_settings = group:multiselect('Safe  »  Head settings', {'Height', 'High Distance'}),
-        }, 
+		safe_functions = {
+			enable = group:checkbox('•  Enable safe functions'),
+			settings = group:multiselect('Safe  »  Functions', table.filter {_DEBUG and 'Head' or nil, 'Knife', 'Zeus'}),
+			head_settings = group:multiselect('Safe  »  Head settings', {'Height', 'High Distance'}),
+			lag_options = group:combobox('Safe  »  Force defensive\nsafe' , {'Default', 'Always on'}),
+			defensive_aa = group:checkbox('Safe  »  Defensive AA\nsafe'),
+			defensive_pitch = group:combobox('Safe  »  Pitch\ndefensive_pitch\nsafe', {'Disabled', 'Up', 'Zero', 'Random', 'Custom'}),
+			pitch_slider = group:slider('\ncustom_defensive_pitch\nsafe', -89, 89, 0),
+			defensive_yaw = group:combobox('Safe  »  Yaw\ndefensive_yaw\nsafe', {'Disabled', 'Sideways', 'Opposite', 'Random', 'Spin', '3-Way', '5-Way', 'Custom'}),
+			yaw_slider = group:slider('\ncustom_defensive_yaw\nsafe', -180, 180, 0)
+		},
 
-        air_exploit = _DEBUG and {
-            enable = group:checkbox('\aB6B665FF•  Enable aerobic exploit', 0x00),
-            while_visible = group:checkbox('Exploit  »  While enemy visible'),
-            exp_tick = group:slider('Exploit  »  Delay', 2, 30, 10, 1, 't')
-        } or nil, 
+		air_exploit = _DEBUG and {
+			enable = group:checkbox('\aB6B665FF•  Enable aerobic exploit', 0x00),
+			while_visible = group:checkbox('Exploit  »  While enemy visible'),
+			exp_tick = group:slider('Exploit  »  Delay', 2, 30, 10, 1, 't')
+		} or nil,
 
-        empty_list = group:label(' '),
-        Settings = {
-            group:label('[\vnocthra\r] Builder'),
-            condition_combo = group:combobox('State', conditional_antiaims.conditions_names)
-        } 
+    empty_list = group:label(' '),
+    Settings = {
+        group:label('[\vnocthra\r] Builder'),
+        condition_combo = group:combobox('State', conditional_antiaims.conditions_names)
     } 
-} 
+}
+}
 
+-- В самом конце файла:
 client.set_event_callback("paint_ui", function()
     Vars.Misc.reset_hitrate:set_visible(Vars.Misc.show_hitrate:get())
 end)
@@ -1331,6 +1354,7 @@ Vars.Misc.show_hitrate:set_callback(function()
     Vars.Misc.reset_hitrate:set_visible(Vars.Misc.show_hitrate:get())
 end)
 
+-- SMART RESOLVER & PREDICTION SYSTEM
 local hitrate_data = {
     hits = 0,
     shots = 0,
@@ -2326,7 +2350,7 @@ screen_indication.luasense = function (anim)
 	local r2, g2, b2, a2 = 55,55,55,anim
 	local highlight_fraction =  (globals.realtime() / 2 % 1.2 * 2) - 1.2
 	local output = ""
-	local text_to_draw = " H R A"
+	local text_to_draw = "N O C T H R A"
 	for idx = 1, #text_to_draw do
 		local character = text_to_draw:sub(idx, idx)
 		local character_fraction = idx / #text_to_draw
@@ -2342,7 +2366,7 @@ screen_indication.luasense = function (anim)
 		output = output .. ('\a%02x%02x%02x%02x%s'):format(r1, g1, b1, a2, text_to_draw:sub(idx, idx))
 	end
 
-	output = "N O C  T " .. output
+	output = "" .. output
 	if Vars.Misc.alt_watermark_settings.nosp.value then
 		output = string.gsub(output, " ", "")
 	end
@@ -2374,7 +2398,7 @@ screen_indication.handle = function()
 	local x, y = client.screen_size()
 	local center = { x*0.5, y*0.5+25 }
 
-    if not indication_enable then
+	if not (indication_enable or Vars.Misc.branded_watermark:get()) then
 		if Vars.Misc.alt_watermark.value == "Modern" then
 			screen_indication.luasense(255)
 		else
@@ -3139,6 +3163,7 @@ conditional_antiaims.manual_dir = 0
 conditional_antiaims.manual_keys = {
 	{ "left", yaw = -90, item = Vars.AA.manuals.left.hotkey },
 	{ "right", yaw = 90, item = Vars.AA.manuals.right.hotkey },
+	{ "reset", yaw = nil, item = Vars.AA.manuals.reset.hotkey },
 }
 
 for i, v in ipairs(conditional_antiaims.manual_keys) do
@@ -3569,6 +3594,36 @@ antiaim_on_use.handle = function(cmd)
 
 end
 
+widgets.branded_watermark = {}
+
+widgets.branded_watermark.handle = function()
+    local anim = animations.new('widgets_branded_watermark', Vars.Misc.branded_watermark.value and 255 or 0)
+	if anim < 1 then return end
+
+	local accent = { Vars.Misc.branded_watermark.color:get() }
+    local design_username = information.user
+
+	local x, y = client.screen_size()
+	local center = { x = x*0.5, y = y*0.5 }
+
+	local white = { 255, 255, 255, anim }
+	local design_accent_color = { accent[1], accent[2], accent[3], anim }
+
+	if readfile(img.eva.path) then
+		widgets.branded_watermark.img = images.load_png(readfile(img.eva.path))
+		widgets.branded_watermark.img:draw(11, center.y - 16, 36, 36, 255, 255, 255, anim, true, 'f')
+	end
+
+	local text = { 
+		[1] = string.format('nocthra\a%s.PINK', utils.rgb_to_hex(design_accent_color)),
+		[2] = string.format('USER - %s [\a%s%s\a%s]', string.upper(design_username), utils.rgb_to_hex(design_accent_color), string.upper(information.version), utils.rgb_to_hex(white))
+	}
+	local measure = { render.measure_text('-', text[2]) }
+
+	render.text(40, center.y + 5, 255, 255, 255, anim, '-', 0, text[1])
+	render.text(40, center.y + (measure[2] + 2), 255, 255, 255, anim, '-', 0, text[2])
+end
+
 fast_ladder.handle = function(cmd)
     if not Vars.Misc.fast_ladder:get() then
         return
@@ -3692,10 +3747,10 @@ for k, v in pairs(Vars.Misc.manual_arrows_settings) do
 	Vars.Misc.manual_arrows_settings.getzeus_second_accent_color:depend({Vars.Misc.manual_arrows, true}, {Vars.Misc.manual_arrows_settings.settings, 'Invictus'})
 end
 
-Vars.Misc.alt_watermark:depend({Vars.Misc.screen_indicators, false})  -- вместо branded_watermark
-Vars.Misc.alt_watermark_settings.pos:depend({Vars.Misc.screen_indicators, false}, {Vars.Misc.alt_watermark, 'Modern'})
-Vars.Misc.alt_watermark_settings.color:depend({Vars.Misc.screen_indicators, false}, {Vars.Misc.alt_watermark, 'Modern'})
-Vars.Misc.alt_watermark_settings.nosp:depend({Vars.Misc.screen_indicators, false}, {Vars.Misc.alt_watermark, 'Modern'})
+Vars.Misc.alt_watermark:depend({Vars.Misc.branded_watermark, false})
+Vars.Misc.alt_watermark_settings.pos:depend({Vars.Misc.branded_watermark, false}, {Vars.Misc.alt_watermark, 'Modern'})
+Vars.Misc.alt_watermark_settings.color:depend({Vars.Misc.branded_watermark, false}, {Vars.Misc.alt_watermark, 'Modern'})
+Vars.Misc.alt_watermark_settings.nosp:depend({Vars.Misc.branded_watermark, false}, {Vars.Misc.alt_watermark, 'Modern'})
 
 if Vars.Misc.crosshair_settings then
 	for k, v in pairs(Vars.Misc.crosshair_settings) do
@@ -3712,12 +3767,26 @@ end
 for k, v in pairs(Vars.AA.manuals) do
     Vars.AA.manuals.left:depend({Vars.AA.manuals.enable, true})
 	Vars.AA.manuals.right:depend({Vars.AA.manuals.enable, true})
+	Vars.AA.manuals.reset:depend({Vars.AA.manuals.enable, true})
+	Vars.AA.manuals.inverter:depend({Vars.AA.manuals.enable, true})
 	Vars.AA.manuals.manuals_over_fs:depend({Vars.AA.manuals.enable, true})
+	Vars.AA.manuals.lag_options:depend({Vars.AA.manuals.enable, true})
+	Vars.AA.manuals.defensive_aa:depend({Vars.AA.manuals.enable, true})
+	Vars.AA.manuals.defensive_pitch:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true})
+	Vars.AA.manuals.pitch_slider:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true}, {Vars.AA.manuals.defensive_pitch, 'Custom'})
+	Vars.AA.manuals.defensive_yaw:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true})
+	Vars.AA.manuals.yaw_slider:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true}, {Vars.AA.manuals.defensive_yaw, 'Custom'})
 end
 
 for k, v in pairs(Vars.AA.safe_functions) do
 	Vars.AA.safe_functions.settings:depend({Vars.AA.safe_functions.enable, true})
 	Vars.AA.safe_functions.head_settings:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.settings, 'Head'})
+	Vars.AA.safe_functions.lag_options:depend({Vars.AA.safe_functions.enable, true})
+	Vars.AA.safe_functions.defensive_aa:depend({Vars.AA.safe_functions.enable, true})
+	Vars.AA.safe_functions.defensive_pitch:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true})
+	Vars.AA.safe_functions.pitch_slider:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true}, {Vars.AA.safe_functions.defensive_pitch, 'Custom'})
+	Vars.AA.safe_functions.defensive_yaw:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true})
+	Vars.AA.safe_functions.yaw_slider:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true}, {Vars.AA.safe_functions.defensive_yaw, 'Custom'})
 end
 
 if Vars.AA.air_exploit then
@@ -3740,6 +3809,7 @@ client.set_event_callback('paint', screen_indication.handle)
 client.set_event_callback('paint', manual_indication.handle)
 client.set_event_callback('setup_command', manual_indication.peeking_whom)
 client.set_event_callback('pre_render', model_breaker.handle)
+client.set_event_callback('paint', widgets.branded_watermark.handle)
 client.set_event_callback('player_hurt', crosshair_logger.player_hurt)
 client.set_event_callback('aim_fire', crosshair_logger.aim_fire)
 client.set_event_callback('aim_miss', crosshair_logger.aim_miss)
