@@ -305,19 +305,23 @@ local elemence = {} do
 		end,
 	}
 
-	local depend = function (v)
-		local condition = false
+local depend = function (v)
+    if not v or not v[1] or not v[1].type then
+        return false
+    end
 
-		if type(v[2]) == "function" then
-			condition = v[2]( v[1] )
-		else
-			local f = cases[v[1].type]
-			if f then condition = f(v)
-			else condition = v[1].value == v[2] end
-		end
+    local condition = false
 
-		return condition and true or false
-	end
+    if type(v[2]) == "function" then
+        condition = v[2]( v[1] )
+    else
+        local f = cases[v[1].type]
+        if f then condition = f(v)
+        else condition = v[1].value == v[2] end
+    end
+
+    return condition and true or false
+end
 
 	elemence.dependant = function (owner, dependant, dis)
 		local count = 0
@@ -344,7 +348,6 @@ local gamesense_aa = {
     yaw_jitter = { ui.reference('AA', 'Anti-aimbot angles', 'Yaw jitter') },
     body_yaw = { ui.reference('AA', 'Anti-aimbot angles', 'Body yaw') },
     freestanding = { ui.reference('AA', 'Anti-aimbot angles', 'Freestanding') },
-	roll_aa = ui.reference('AA', 'Anti-aimbot angles', 'Roll')
 }
 
 local utils, rage = {}, {}
@@ -776,28 +779,30 @@ methods_mt.element = {
 	__tostring = function (self) return string.format('ui_handler.%s[%d] "%s"', self.type, self.ref, self.name) end,
 	__call = function (self, ...) if #{...} > 0 then ui.set(self.ref, ...) else return ui.get(self.ref) end end,
 
-	depend = function (self, ...)
-		local arg = {...}
-		local disabler = arg[1] == true
+depend = function (self, ...)
+    local arg = {...}
+    local disabler = arg[1] == true
 
-		local depend = registry[self.ref].depend[disabler and 2 or 1]
-		local this = registry[self.ref].depend[0]
+    local depend = registry[self.ref].depend[disabler and 2 or 1]
+    local this = registry[self.ref].depend[0]
 
-		for i = (disabler and 2 or 1), table.maxn(arg) do
-			local v = arg[i]
-			if v then
-				if v.__name == "ui_handler::element" then v = {v, true} end
-				depend[#depend+1] = v
+    for i = (disabler and 2 or 1), table.maxn(arg) do
+        local v = arg[i]
+        if v then
+            if v.__name == "ui_handler::element" then v = {v, true} end
+            depend[#depend+1] = v
 
-				local check = function () elemence.dependant(depend, this, disabler) end
-				check()
+            local check = function () elemence.dependant(depend, this, disabler) end
+            check()
 
-				registry[v[1].ref].callbacks[#registry[v[1].ref].callbacks+1] = check
-			end
-		end
+            if v[1] and v[1].ref and registry[v[1].ref] then
+                registry[v[1].ref].callbacks[#registry[v[1].ref].callbacks+1] = check
+            end
+        end
+    end
 
-		return self
-	end,
+    return self
+end,
 
 	override = function (self, value)
 		local is_hk = self.type == "hotkey"
@@ -1190,77 +1195,130 @@ group:label(' ')
 conditional_antiaims.conditions_names = {'Shared', 'Standing', 'Moving', 'Slowwalk', 'Crouch', 'Moving & Crouch', 'Air', 'Air & Crouch', 'Freestand', 'Fakelag', 'On Use'}
 local Vars = {
     Home = {
-        group:label('\vNocthra\r'),
-        group:combobox('Tabs', {'Home', 'Misc', 'AA'}, 0),
-        group:label('[\vnocthra\r] Information'),
-        group:label('User: \v' .. information.user),
-        group:label('Update: \vToday'),
+		group:label('[\vnocthra\r] Information'),
+		group:label('User: \v' .. information.user),
+		group:label('Version: \v0.1 test'),
+		group:label(' '),
+		group:label('[\vnocthra\r] Presets'),
+
+		list = group:listbox('Configs', '', false),
+		name = group:textbox('Config name', '', false),
+		load = group:button('Load', function() end),
+		save = group:button('Save', function() end),
+		delete = group:button('Delete', function() end),
+		import = group:button('Import from clipboard', function() end),
+		export = group:button('Export to clipboard', function() end)
+    },
+
+
+    Misc = {
+        group:label('[\vnocthra\r] Visuals'),
+        screen_indicators = group:checkbox('•  Screen indicators', { 255, 152, 152 }),
+        screen_indicators_settings = {
+        },
+        screen_indicators_settings_dmg = _DEBUG and group:checkbox('•  Min. damage above crosshair') or nil,
+        manual_arrows = group:checkbox('•  Manual arrows'),
+        manual_arrows_settings = {
+            settings = group:combobox('Arrows  »  Settings' , {'Default', 'Invictus', 'Teamskeet'}),
+            adding = group:slider('Arrows  »  Adding\nDEF', 0, 100, 35),
+            accent_color = group:label('Arrows  »  Accent color\nDEF', { 113, 138, 187 }),
+            teamskeet_adding = group:slider('Arrows  »  Adding\nTS', 4, 100, 42),
+            teamskeet_accent_color = group:label('Arrows  »  Accent color\nTS', { 175, 255, 0 }),
+            teamskeet_desync_accent_color = group:label('Arrows  »  Desync color\nTS', { 0, 200, 255 }),
+
+            invictus_dynamic = group:checkbox("Arrows  »  Dynamic mode"),
+
+            getzeus_adding = group:slider('Arrows  »  Adding\nGT', 4, 100, 44),
+            getzeus_accent_color = group:label('Arrows  »  Accent color\nGT', { 111, 111, 220 }),
+            getzeus_second_accent_color = group:label('Arrows  »  Second color\nGT', { 255, 255, 255 })
+        },
+        alt_watermark = group:combobox('•  Watermark', {'Default', 'Modern'}),
+        alt_watermark_settings = {
+            color = group:color_picker('•  Position', 255, 175, 175, 0.8),
+            pos = group:combobox('•  Position', {'Bottom', 'Left', 'Right'}),
+        },
+
+        crosshair_hitlog = _DEBUG and group:checkbox('•  Crosshair logger') or nil,
+        crosshair_settings = 
+        _DEBUG and {
+            move = group:checkbox('•  Move with scope'),
+            hit_color = group:label('Hit color', { 146, 255, 0 }),
+            miss_color = group:label('Miss color', { 255, 0, 0 }),    
+        } or nil,
+
+        hitlog_console = _DEBUG and group:checkbox('•  Console logger') or nil,
+        hitlogger_settings = 
+        _DEBUG and {
+            prefix_color = group:label('Prefix color', { 142, 165, 255 }),
+            hit_color = group:label('Hit color', { 159, 202, 43 }),
+            miss_color = group:label('Miss color', { 255, 180, 0 }),    
+        } or nil,
+
+        show_hitrate = group:checkbox('•  Show hitrate'),
+        reset_hitrate = group:button('Reset hitrate', function() end),
+	
         group:label(' '),
+        group:label('[\vnocthra\r] Miscellaneous'),
         
-        group:label('[\vnocthra\r] Presets'),
-        list = group:listbox('Configs', config_system.config_list(), 0),
-        name = group:textbox('Config name', ''),
-        load = group:button('Load', function()
-            local name = Vars.Home.name:get()
-            if name ~= '' then config_system.load(name) end
-        end),
-        save = group:button('Save', function()
-            local name = Vars.Home.name:get()
-            if name ~= '' then config_system.save(name) end
-        end),
-        delete = group:button('Delete', function()
-            local name = Vars.Home.name:get()
-            if name ~= '' then config_system.delete(name) end
-        end),
-        import = group:button('Import from clipboard', function()
-            config_system.import_settings()
-        end),
-        export = group:button('Export to clipboard', function()
-            config_system.export_settings()
-        end),
+        fast_ladder = group:checkbox('•  Fast ladder'),
+        fast_ladder_settings = {
+            group:multiselect('Settings' , {'Ascending', 'Descending'})
+        },
+        chat_spammer = group:checkbox('•  Chat spammer'),
+        deathsay = group:checkbox('•  On death'),
+        
+        anim_breakers = group:checkbox('•  Animation breakers'),
+        anim_breakers_settings = {
+            breaked_legs = group:combobox('Breaked legs', {'Disabled', 'Static', 'Jitter', 'Allah', 'Blend'}),
+            air = group:combobox('Air legs', {'Disabled', 'Static', 'Haram'}),
+            pitch = group:checkbox('Pitch on land')
+        },
 
-        group:label(' '),
-        group:label('[\vnocthra\r] Cloud System'),
-        cloud_toggle = group:button('☁️ Show Cloud', function()
-            local show_cloud = not Vars.Home.cloud_presets.visible
-            Vars.Home.cloud_presets:set_visible(show_cloud)
-            Vars.Home.cloud_load:set_visible(show_cloud)
-            Vars.Home.cloud_save:set_visible(show_cloud)
-            Vars.Home.list:set_visible(not show_cloud)
-            Vars.Home.name:set_visible(not show_cloud)
-            Vars.Home.load:set_visible(not show_cloud)
-            Vars.Home.save:set_visible(not show_cloud)
-            Vars.Home.delete:set_visible(not show_cloud)
-            Vars.Home.import:set_visible(not show_cloud)
-            Vars.Home.export:set_visible(not show_cloud)
-            Vars.Home.cloud_toggle:set(show_cloud and '← Back to Config' or '☁️ Show Cloud')
-        end),
-        cloud_presets = group:listbox('Cloud Presets', {'*Default', '*Legit', '*Rage', '*HvH', '*Scout', '*Awp'}, 0),
-        cloud_load = group:button('Load Cloud', function()
-            local preset = Vars.Home.cloud_presets:get()
-            client.color_log(255, 255, 0, '[Nocthra] Loading cloud: ' .. preset)
-        end),
-        cloud_save = group:button('Save Cloud', function()
-            client.color_log(255, 255, 0, '[Nocthra] Saving to cloud...')
-        end),
 
-        group:label(' '),
-        group:label('[\vnocthra\r] Social Links'),
-        youtube = group:button('YouTube', function()
-            client.exec('start https://youtube.com')
-        end),
-        discord = group:button('Discord', function()
-            client.exec('start https://discord.gg/nocthra')
-        end)
+        smart_resolver = group:checkbox('•  Resolver'),
+        prediction = group:checkbox('•  Prediction')
+},
+
+    AA = {
+		group:label('[\vnocthra\r] Settings'),
+		enable = group:checkbox('•  Enable anti-aims'),
+		edge_yaw = group:checkbox('•  Edge yaw', 0x00),
+		freestanding = group:checkbox('•  Freestanding', 0x00),
+		avoid_backstab = _DEBUG and group:checkbox('•  Avoid backstab') or nil,
+		manuals = {
+			enable = group:checkbox('•  Enable manuals'),
+			left = group:label('Manuals  »  Left side', 0x00),
+			right = group:label('Manuals  »  Right side', 0x00),
+			inverter = group:checkbox('Manuals  »  Inverter'),
+			manuals_over_fs = group:checkbox('Manuals  »  Over FS'),
+		},
+
+		safe_functions = {
+			enable = group:checkbox('•  Enable safe functions'),
+			settings = group:multiselect('Safe  »  Functions', table.filter {_DEBUG and 'Head' or nil, 'Knife', 'Zeus'}),
+			head_settings = group:multiselect('Safe  »  Head settings', {'Height', 'High Distance'}),
+		},
+
+    air_exploit = _DEBUG and {
+        enable = group:checkbox('\aB6B665FF•  Airlag', 0x00),
+        while_visible = group:checkbox('•  Enemy visible'),
+        exp_tick = group:slider('•  Delay', 2, 30, 10, 1, 't')
+    } or nil,
+
+    empty_list = group:label(' '),
+    Settings = {
+        group:label('[\vnocthra\r] Builder'),
+        condition_combo = group:combobox('State', conditional_antiaims.conditions_names)
     } 
 }
+}
 
-initDatabase()  
+if _DEBUG and air_exploit then
+    Vars.AA.air_exploit.while_visible:depend({Vars.AA.air_exploit.enable, true})
+    Vars.AA.air_exploit.exp_tick:depend({Vars.AA.air_exploit.enable, true})
+end
 
--- Скрываем cloud при старте
-Vars.Home.cloud_presets:set_visible(false)
-Vars.Home.cloud_load:set_visible(false)
-Vars.Home.cloud_save:set_visible(false)
+Vars.Misc.deathsay:depend({Vars.Misc.chat_spammer, true})
 
 Vars.Misc.alt_watermark_settings.pos:depend({Vars.Misc.alt_watermark, 'Modern'})
 Vars.Misc.alt_watermark_settings.color:depend({Vars.Misc.alt_watermark, 'Modern'})
@@ -1701,7 +1759,7 @@ local function initDatabase()
         database.write(protected.database.configs, {})
     end
 
-    local link = 'https://cdn.discordapp.com/attachments/1146862113223094292/1160979637061570690/message.txt'
+    local link = 'сыллка на пресет гитхаб, дискорд'
 
     http.get(link, function(success, response)
         if not success then
@@ -1776,7 +1834,6 @@ gamesense_refs.yaw_modifier, gamesense_refs.yaw_modifier_offset = ui_handler.ref
 gamesense_refs.edge_yaw = ui_handler.reference('AA', 'Anti-aimbot angles', 'Edge yaw')
 gamesense_refs.freestanding = ui_handler.reference('AA', 'Anti-aimbot angles', 'Freestanding')
 gamesense_refs.freestanding_key = { ui_handler.reference('AA', 'Anti-aimbot angles', 'Freestanding') }
-gamesense_refs.roll_aa = ui_handler.reference('AA', 'Anti-aimbot angles', 'Roll')
 gamesense_refs.prefer_safe_point = ui.reference('RAGE', 'Aimbot', 'Prefer safe point')
 gamesense_refs.force_safe_point = ui.reference('RAGE', 'Aimbot', 'Force safe point')
 gamesense_refs.rage_enable = ui_handler.reference('RAGE', 'Aimbot', 'Enabled')
@@ -2359,7 +2416,7 @@ if not indication_enable then
 	anim.name = {}
 	anim.name.alpha = animations.new('lua_name_alpha', indication_enable and 255 or 0)
 	anim.name.move = animations.new('binds_move_name', indication_enable and not scope_based and -render.measure_text(nil, 'nocthra')*0.5 or 15)
-    anim.name.glow = animations.new('glow_name_alpha', (indication_enable and Vars.Misc.screen_indicators_settings.glow:get()) and 50 or 0)
+    anim.name.glow = animations.new('glow_name_alpha', indication_enable and 50 or 0)
 	if anim.name.alpha > 1 then
 		if anim.name.glow > 1 then
 			render.shadow(center[1]+1 + anim.name.move, center[2]+7, render.measure_text('b', 'nocthra')-1, 0, 10, 0, {accent_color[1], accent_color[2], accent_color[3], anim.name.glow}, {accent_color[1], accent_color[2], accent_color[3], anim.name.glow})
@@ -2602,7 +2659,11 @@ death_spammer.phares = {
 }
 
 death_spammer.handle = function(e)
-	if not Vars.Misc.deathsay:get() then
+    if not Vars.Misc.chat_spammer:get() then
+        return
+    end
+    
+    if not Vars.Misc.deathsay:get() then
         return
     end
 
@@ -2784,9 +2845,9 @@ for k, name in pairs(conditional_antiaims.conditions_names) do
     conditional_antiaims.conditions[k].pitch = group:combobox('Pitch' .. name_unique, { 'Off', 'Up', 'Down', 'Random' })
 
 	conditional_antiaims.conditions[k].yaw_base = group:combobox('Yaw base' .. name_unique, { 'At targets', 'Local view' })
-	conditional_antiaims.conditions[k].left_yaw_offset = group:slider('Yaw base  »  Left side' .. name_unique, -180, 180, 0, 0, '°')
-	conditional_antiaims.conditions[k].right_yaw_offset = group:slider('Yaw base  »  Right side' .. name_unique, -180, 180, 0, 0, '°')
-	conditional_antiaims.conditions[k].yaw_randomize = group:slider('Yaw base  »  Кandomization' .. name_unique, 0, 100, 0, 0, '%', 1, {[0] = "Off"})
+	conditional_antiaims.conditions[k].left_yaw_offset = group:slider('Left side' .. name_unique, -180, 180, 0, 0, '°')
+	conditional_antiaims.conditions[k].right_yaw_offset = group:slider('Right side' .. name_unique, -180, 180, 0, 0, '°')
+	conditional_antiaims.conditions[k].yaw_randomize = group:slider('Randomization' .. name_unique, 0, 100, 0, 0, '%', 1, {[0] = "Off"})
 
 	conditional_antiaims.conditions[k].yaw_modifier = group:combobox('Yaw jitter' .. name_unique, { 'Off', 'Offset', 'Center', 'Random', 'Skitter', 'L&R Center', 'Custom way' })
 	conditional_antiaims.conditions[k].yaw_modifier_offset = group:slider('\nbothsides' .. name_unique, -180, 180, 0, 0, '°')
@@ -2799,10 +2860,8 @@ for k, name in pairs(conditional_antiaims.conditions_names) do
 	conditional_antiaims.conditions[k].body_yaw = group:combobox('Body yaw' .. name_unique, { 'Off', 'Opposite', 'Jitter', 'Static', 'Advanced' })
 	conditional_antiaims.conditions[k].body_yaw_offset = group:slider('\nbyawoffset' .. name_unique, -180, 180, 0, 0, '°')
 	conditional_antiaims.conditions[k].delay_ticks = group:slider('\ndelayticks' .. name_unique, 1, 14, 1, 0, 't')
-	conditional_antiaims.conditions[k].roll_aa = group:slider('Roll' .. name_unique, -45, 45, 1, 0, '°')
 
 	if name ~= 'Fakelag' then
-		conditional_antiaims.conditions[k].lag_options = group:combobox('Force defensive' .. name_unique, {'Default', 'Always on'})
 		conditional_antiaims.conditions[k].defensive_aa = group:checkbox('Defensive AA' .. name_unique)
 		conditional_antiaims.conditions[k].defensive_pitch = group:combobox('Pitch\ndefensive_pitch' .. name_unique, {'Disabled', 'Up', 'Zero', 'Random', 'Custom'})
 		conditional_antiaims.conditions[k].pitch_slider = group:slider('\ncustom_defensive_pitch' .. name_unique, -89, 89, 0, 0, '°')
@@ -2810,9 +2869,6 @@ for k, name in pairs(conditional_antiaims.conditions_names) do
 		conditional_antiaims.conditions[k].yaw_slider = group:slider('\ncustom_defensive_yaw' .. name_unique, -180, 180, 0, 0, '°')
 	end
 end
-
-experimental_defensive111 = group:label(' ')
-experimental_defensive = group:checkbox('\aFF0000FF⚠  Experimental defensive')
 
 conditional_antiaims.desync_delta = 0
 conditional_antiaims.get_desync_delta = function()
@@ -2926,7 +2982,6 @@ conditional_antiaims.new_meta_defensive = safecall('new_meta_defensive', true, f
     local weapon = entity.get_player_weapon(plocal)
     local safe_knife = ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.settings:get('Knife')) and (weapon ~= nil and entity.get_classname(weapon) == 'CKnife')) and (conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)
     local safe_zeus = ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.settings:get('Zeus')) and (weapon ~= nil and entity.get_classname(weapon) == 'CWeaponTaser')) and (conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)
-    local is_safe = ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.defensive_aa:get() and (not is_manuals)) and (((Vars.AA.safe_functions.head_settings:get('High Distance') and distance_to_enemy[1] > 119) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)) or ((Vars.AA.safe_functions.head_settings:get('Height') and distance_to_enemy[2] < -50) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.moving_crouch or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag))))
 	local safe_conds = (((Vars.AA.safe_functions.head_settings:get('High Distance') and distance_to_enemy[1] > 119) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)) or ((Vars.AA.safe_functions.head_settings:get('Height') and distance_to_enemy[2] < -50) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.moving_crouch or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)))
 	
 	if is_manuals and Vars.AA.manuals.lag_options:get() == 'Always on' then
@@ -3072,7 +3127,6 @@ conditional_antiaims.manual_dir = 0
 conditional_antiaims.manual_keys = {
 	{ "left", yaw = -90, item = Vars.AA.manuals.left.hotkey },
 	{ "right", yaw = 90, item = Vars.AA.manuals.right.hotkey },
-	{ "reset", yaw = nil, item = Vars.AA.manuals.reset.hotkey },
 }
 
 for i, v in ipairs(conditional_antiaims.manual_keys) do
@@ -3117,7 +3171,6 @@ conditional_antiaims.set_yaw_base = function(new_config)
     local manuals_over_fs = Vars.AA.manuals.manuals_over_fs:get()
     local is_manuals = (conditional_antiaims.manual_dir == -90 or conditional_antiaims.manual_dir == 90)
 
-	local defensive = not (globals.tickcount() > (experimental_defensive:get() and conditional_antiaims.defensive1 or conditional_antiaims.defensive) and conditional_antiaims.states.fakelag)
     local weapon = entity.get_player_weapon(player)
 
     local knife = weapon ~= nil and entity.get_classname(weapon) == 'CKnife'
@@ -3149,8 +3202,7 @@ conditional_antiaims.set_yaw_base = function(new_config)
 			new_config.body_yaw_offset = 0
         end
     end
-
-	new_config.roll_aa = new_config.roll_aa
+	
     new_config.freestanding = not (manuals_over_fs and (is_manuals)) and gamesense_refs.freestanding:get()
 end
 
@@ -3247,7 +3299,6 @@ conditional_antiaims.handle = function(cmd)
 	local distance_to_enemy = {conditional_antiaims.get_distance()}   
     local current_condition = conditional_antiaims.get_active_idx(idx)
    	local new_config = conditional_antiaims.get_cond_values(current_condition)
-	local defensive = not (globals.tickcount() > (experimental_defensive:get() and conditional_antiaims.defensive1 or conditional_antiaims.defensive) and conditional_antiaims.states.fakelag)
 	local is_manuals = (conditional_antiaims.manual_dir == -90 or conditional_antiaims.manual_dir == 90)
 
 	new_config.yaw_offset = conditional_antiaims.meta_latest_yaw
@@ -3315,7 +3366,6 @@ conditional_antiaims.handle = function(cmd)
         ['Custom'] = new_config.yaw_slider
 	}
 
-
 	-- 
 	new_config.yaw_offset1 = '180'
 	conditional_antiaims.delay_switch(new_config)
@@ -3346,30 +3396,27 @@ conditional_antiaims.handle = function(cmd)
 			end
 		end
 
-		if defensive then
-			if new_config.defensive_aa and not (is_manuals or (conditional_antiaims.safe_active) or safe_knife or safe_zeus or backstab_allow) then
+		-- DEFENSIVE AA РАБОТАЕТ ВСЕГДА КОГДА ВКЛЮЧЕН (БЕЗ ПРОВЕРКИ defensive)
+		if new_config.defensive_aa and not (is_manuals or (conditional_antiaims.safe_active) or safe_knife or safe_zeus or backstab_allow) then
+			new_config.pitch = 'Custom'
+			new_config.pitch_value = pitch_tbl[new_config.defensive_pitch]
+			new_config.yaw_offset = yaw_tbl[new_config.defensive_yaw]
+			if ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.defensive_aa:get() and (not is_manuals)) and (((Vars.AA.safe_functions.head_settings:get('High Distance') and distance_to_enemy[1] > 119) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)) or ((Vars.AA.safe_functions.head_settings:get('Height') and distance_to_enemy[2] < -50) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.moving_crouch or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)))) then
 				new_config.pitch = 'Custom'
-				new_config.pitch_value = pitch_tbl[new_config.defensive_pitch]
-				new_config.yaw_offset = yaw_tbl[new_config.defensive_yaw]
-			elseif (Vars.AA.safe_functions.defensive_aa:get() and (safe_head) and not is_manuals) then
-				if ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.defensive_aa:get() and (not is_manuals)) and (((Vars.AA.safe_functions.head_settings:get('High Distance') and distance_to_enemy[1] > 119) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)) or ((Vars.AA.safe_functions.head_settings:get('Height') and distance_to_enemy[2] < -50) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.moving_crouch or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)))) then
-					new_config.pitch = 'Custom'
-					new_config.pitch_value = pitch_tbl[Vars.AA.safe_functions.defensive_pitch:get()]
-					new_config.yaw_offset = yaw_tbl[Vars.AA.safe_functions.defensive_yaw:get()]
-				elseif (safe_knife or safe_zeus) then
-					new_config.pitch = 'Custom'
-					new_config.pitch_value = pitch_tbl[Vars.AA.safe_functions.defensive_pitch:get()]
-					new_config.yaw_offset = yaw_tbl[Vars.AA.safe_functions.defensive_yaw:get()]
-				end
+				new_config.pitch_value = pitch_tbl[Vars.AA.safe_functions.defensive_pitch:get()]
+				new_config.yaw_offset = yaw_tbl[Vars.AA.safe_functions.defensive_yaw:get()]
+			elseif (safe_knife or safe_zeus) then
+				new_config.pitch = 'Custom'
+				new_config.pitch_value = pitch_tbl[Vars.AA.safe_functions.defensive_pitch:get()]
+				new_config.yaw_offset = yaw_tbl[Vars.AA.safe_functions.defensive_yaw:get()]
 			end
 		end
 	else
-		if defensive then
-			if Vars.AA.manuals.defensive_aa:get() and is_manuals then
-				new_config.pitch = 'Custom'
-				new_config.pitch_value = pitch_tbl[Vars.AA.manuals.defensive_pitch:get()]
-				new_config.yaw_offset = yaw_tbl[Vars.AA.manuals.defensive_yaw:get()]
-			end
+		-- DEFENSIVE AA ДЛЯ MANUALS РАБОТАЕТ ВСЕГДА КОГДА ВКЛЮЧЕН
+		if Vars.AA.manuals.defensive_aa:get() and is_manuals then
+			new_config.pitch = 'Custom'
+			new_config.pitch_value = pitch_tbl[Vars.AA.manuals.defensive_pitch:get()]
+			new_config.yaw_offset = yaw_tbl[Vars.AA.manuals.defensive_yaw:get()]
 		end
 	end
 	new_config.yaw_offset = math.normalize_yaw(new_config.yaw_offset)
@@ -3569,8 +3616,6 @@ end)
 
 ui_handler.traverse(conditional_antiaims.conditions, function (element, path)
     element:depend({tab, 'AA'})
-	experimental_defensive111:depend({tab, 'AA'})
-	experimental_defensive:depend({tab, 'AA'})
 end)
 
 for k, v in pairs(conditional_antiaims.conditions_names) do
@@ -3641,32 +3686,18 @@ end
 for k, v in pairs(Vars.AA.manuals) do
     Vars.AA.manuals.left:depend({Vars.AA.manuals.enable, true})
 	Vars.AA.manuals.right:depend({Vars.AA.manuals.enable, true})
-	Vars.AA.manuals.reset:depend({Vars.AA.manuals.enable, true})
 	Vars.AA.manuals.inverter:depend({Vars.AA.manuals.enable, true})
 	Vars.AA.manuals.manuals_over_fs:depend({Vars.AA.manuals.enable, true})
-	Vars.AA.manuals.lag_options:depend({Vars.AA.manuals.enable, true})
-	Vars.AA.manuals.defensive_aa:depend({Vars.AA.manuals.enable, true})
-	Vars.AA.manuals.defensive_pitch:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true})
-	Vars.AA.manuals.pitch_slider:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true}, {Vars.AA.manuals.defensive_pitch, 'Custom'})
-	Vars.AA.manuals.defensive_yaw:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true})
-	Vars.AA.manuals.yaw_slider:depend({Vars.AA.manuals.enable, true}, {Vars.AA.manuals.defensive_aa, true}, {Vars.AA.manuals.defensive_yaw, 'Custom'})
 end
 
 for k, v in pairs(Vars.AA.safe_functions) do
 	Vars.AA.safe_functions.settings:depend({Vars.AA.safe_functions.enable, true})
 	Vars.AA.safe_functions.head_settings:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.settings, 'Head'})
-	Vars.AA.safe_functions.lag_options:depend({Vars.AA.safe_functions.enable, true})
-	Vars.AA.safe_functions.defensive_aa:depend({Vars.AA.safe_functions.enable, true})
-	Vars.AA.safe_functions.defensive_pitch:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true})
-	Vars.AA.safe_functions.pitch_slider:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true}, {Vars.AA.safe_functions.defensive_pitch, 'Custom'})
-	Vars.AA.safe_functions.defensive_yaw:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true})
-	Vars.AA.safe_functions.yaw_slider:depend({Vars.AA.safe_functions.enable, true}, {Vars.AA.safe_functions.defensive_aa, true}, {Vars.AA.safe_functions.defensive_yaw, 'Custom'})
 end
 
 if Vars.AA.air_exploit then
 	for k, v in pairs(Vars.AA.air_exploit) do
 		Vars.AA.air_exploit.while_visible:depend({Vars.AA.air_exploit.enable, true})
-		Vars.AA.air_exploit.exp_tick:depend({Vars.AA.air_exploit.enable, true})
 	end
 end
 
@@ -3703,4 +3734,80 @@ client.set_event_callback('setup_command', function(cmd)
 	fast_ladder.handle(cmd)
 	conditional_antiaims.handle(cmd)
 	antiaim_on_use.handle(cmd)
+end)
+
+local pui = require("gamesense/pui")
+
+local ref = {
+    aimbot = pui.reference('RAGE', 'Aimbot', 'Enabled'),
+    dt = {pui.reference('RAGE', 'Aimbot', 'Double tap')},
+    hs = pui.reference("AA", "Other", "On shot anti-aim"),
+}
+
+local was_disabled = true
+local shot_tick = 0
+local ticking = 0
+local tickbase = 0
+local last_tickcount = 0
+
+function tickcount_shot(cmd)
+    shot_tick = globals.tickcount()
+end
+
+function logic(cmd)
+    if last_tickcount == globals.tickcount() then return end
+    last_tickcount = globals.tickcount()
+    
+    local lp = entity.get_local_player()
+    if not lp or not entity.is_alive(lp) then return end
+    
+    if globals.chokedcommands() == 0 then
+        tickbase = entity.get_prop(lp, "m_nTickBase") or 0 - globals.tickcount()
+    end
+    
+    local dt_active = (ref.dt[1]:get() and ref.dt[1]:get_hotkey())
+    local hs_active = ref.hs:get_hotkey()
+    
+    if not (dt_active or hs_active) then
+        was_disabled = true
+        ref.aimbot:set(true) 
+        return
+    end
+    
+    if tickbase == nil then return end
+    
+    if (dt_active or hs_active) and tickbase > 0 and was_disabled then
+        ref.aimbot:set(false)
+        was_disabled = false
+        ticking = 0
+    else
+        local lp_weapon = entity.get_player_weapon(lp)
+        if lp_weapon ~= nil then
+            local weapon_id = bit.band(entity.get_prop(lp_weapon, "m_iItemDefinitionIndex") or 0, 0xFFFF)
+            
+            if weapon_id == 64 then 
+                if ticking <= 2 then
+                    ticking = ticking + 1
+                end
+                ref.aimbot:set(ticking > 1)
+            else
+                ref.aimbot:set(true) 
+            end
+        else
+            ref.aimbot:set(true) 
+        end
+    end
+end
+
+function on_shot_miss(e)
+    was_disabled = true
+    ticking = 0
+end
+
+client.set_event_callback('setup_command', logic)
+client.set_event_callback('weapon_fire', tickcount_shot)
+client.set_event_callback('aim_miss', on_shot_miss)
+client.set_event_callback('round_start', function()
+    was_disabled = true
+    ticking = 0
 end)
