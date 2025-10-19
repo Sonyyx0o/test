@@ -1253,6 +1253,16 @@ local Vars = {
             hit_color = group:label('Hit color', { 159, 202, 43 }),
             miss_color = group:label('Miss color', { 255, 180, 0 }),    
         } or nil,
+		
+		thirdperson = group:checkbox('•  Thirdperson'),
+        thirdperson_settings = {
+        distance = group:slider('distance', 30, 200, 150)
+},
+
+        aspect_ratio = group:checkbox('•  Aspect ratio'),
+        aspect_ratio_settings = {
+        ratio = group:slider('Aspect ratio', 0, 199, 100, true, '%', 1)
+},
 
         show_hitrate = group:checkbox('•  Show hitrate'),
         reset_hitrate = group:button('Reset hitrate', function() end),
@@ -1273,7 +1283,13 @@ local Vars = {
             air = group:combobox('Air legs', {'Disabled', 'Static', 'Haram'}),
             pitch = group:checkbox('Pitch on land')
         },
-
+		
+        autobuy = group:checkbox('•  Auto buy'),
+        autobuy_settings = {
+        primary = group:combobox('Primary weapon', {'-', 'AWP', 'Auto-Sniper', 'Scout', 'Negev'}),
+        secondary = group:combobox('Secondary weapon', {'-', 'R8 Revolver / Deagle', 'Dual Berettas', 'FN57 / Tec9 / CZ75-Auto'}),
+        gear = group:multiselect('Gear', {'Kevlar', 'Helmet', 'Defuse Kit', 'Grenade', 'Molotov', 'Smoke', 'Taser'})
+        },
 
         smart_resolver = group:checkbox('•  Resolver'),
         prediction = group:checkbox('•  Prediction')
@@ -1299,12 +1315,6 @@ local Vars = {
 			head_settings = group:multiselect('Safe  »  Head settings', {'Height', 'High Distance'}),
 		},
 
-    air_exploit = _DEBUG and {
-        enable = group:checkbox('\aB6B665FF•  Airlag', 0x00),
-        while_visible = group:checkbox('•  Enemy visible'),
-        exp_tick = group:slider('•  Delay', 2, 30, 10, 1, 't')
-    } or nil,
-
     empty_list = group:label(' '),
     Settings = {
         group:label('[\vnocthra\r] Builder'),
@@ -1313,10 +1323,84 @@ local Vars = {
 }
 }
 
-if _DEBUG and air_exploit then
-    Vars.AA.air_exploit.while_visible:depend({Vars.AA.air_exploit.enable, true})
-    Vars.AA.air_exploit.exp_tick:depend({Vars.AA.air_exploit.enable, true})
+Vars.Misc.autobuy_settings.primary:depend({Vars.Misc.autobuy, true})
+Vars.Misc.autobuy_settings.secondary:depend({Vars.Misc.autobuy, true})
+Vars.Misc.autobuy_settings.gear:depend({Vars.Misc.autobuy, true})
+
+Vars.Misc.thirdperson_settings.distance:depend({Vars.Misc.thirdperson, true})
+Vars.Misc.aspect_ratio_settings.ratio:depend({Vars.Misc.aspect_ratio, true})
+local function run_autobuy(e)
+    if not Vars.Misc.autobuy:get() then
+        return
+    end
+    
+    local userid = e.userid
+    if userid ~= nil and client.userid_to_entindex(userid) ~= entity.get_local_player() then
+        return
+    end
+    
+    local commands = {}
+    
+    -- Primary weapons
+    local primary_cmds = {
+        ['-'] = "",
+        ['AWP'] = "buy awp; ",
+        ['Auto-Sniper'] = "buy scar20; buy g3sg1; ",
+        ['Scout'] = "buy ssg08; ",
+        ['Negev'] = "buy negev; "
+    }
+    table.insert(commands, primary_cmds[Vars.Misc.autobuy_settings.primary:get()] or "")
+    
+    -- Secondary weapons
+    local secondary_cmds = {
+        ['-'] = "",
+        ['R8 Revolver / Deagle'] = "buy deagle; ",
+        ['Dual Berettas'] = "buy elite; ",
+        ['FN57 / Tec9 / CZ75-Auto'] = "buy fn57; "
+    }
+    table.insert(commands, secondary_cmds[Vars.Misc.autobuy_settings.secondary:get()] or "")
+    
+    -- Gear
+    local gear_cmds = {
+        ['Kevlar'] = "buy vest; ",
+        ['Helmet'] = "buy vesthelm; ",
+        ['Defuse Kit'] = "buy defuser; ",
+        ['Grenade'] = "buy hegrenade; ",
+        ['Molotov'] = "buy incgrenade; ",
+        ['Smoke'] = "buy smokegrenade; ",
+        ['Taser'] = "buy taser; "
+    }
+    
+    local gear = Vars.Misc.autobuy_settings.gear:get()
+    for i = 1, #gear do
+        table.insert(commands, gear_cmds[gear[i]] or "")
+    end
+    
+    table.insert(commands, "use weapon_knife;")
+    client.exec(table.concat(commands, ""))
 end
+
+client.set_event_callback("player_spawn", run_autobuy)
+
+-- Thirdperson логика
+Vars.Misc.thirdperson_settings.distance:set_callback(function()
+    if Vars.Misc.thirdperson:get() then
+        client.exec("cam_idealdist " .. Vars.Misc.thirdperson_settings.distance:get())
+    end
+end)
+
+-- Aspect Ratio логика
+Vars.Misc.aspect_ratio_settings.ratio:set_callback(function()
+    if Vars.Misc.aspect_ratio:get() then
+        local aspect_ratio_value = Vars.Misc.aspect_ratio_settings.ratio:get() * 0.01
+        aspect_ratio_value = 2 - aspect_ratio_value
+        
+        local screen_width, screen_height = client.screen_size()
+        local aspect_ratio_final = (screen_width * aspect_ratio_value) / screen_height
+        
+        client.set_cvar("r_aspectratio", aspect_ratio_final)
+    end
+end)
 
 Vars.Misc.deathsay:depend({Vars.Misc.chat_spammer, true})
 
@@ -2982,6 +3066,7 @@ conditional_antiaims.new_meta_defensive = safecall('new_meta_defensive', true, f
     local weapon = entity.get_player_weapon(plocal)
     local safe_knife = ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.settings:get('Knife')) and (weapon ~= nil and entity.get_classname(weapon) == 'CKnife')) and (conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)
     local safe_zeus = ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.settings:get('Zeus')) and (weapon ~= nil and entity.get_classname(weapon) == 'CWeaponTaser')) and (conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)
+	local is_safe = ((Vars.AA.safe_functions.enable:get() and Vars.AA.safe_functions.defensive_aa:get() and (not is_manuals)) and (((Vars.AA.safe_functions.head_settings:get('High Distance') and distance_to_enemy[1] > 119) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)) or ((Vars.AA.safe_functions.head_settings:get('Height') and distance_to_enemy[2] < -50) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.moving_crouch or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag))))
 	local safe_conds = (((Vars.AA.safe_functions.head_settings:get('High Distance') and distance_to_enemy[1] > 119) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)) or ((Vars.AA.safe_functions.head_settings:get('Height') and distance_to_enemy[2] < -50) and (conditional_antiaims.player_state == conditional_antiaims.states.crouching or conditional_antiaims.player_state == conditional_antiaims.states.moving_crouch or conditional_antiaims.player_state == conditional_antiaims.states.standing or conditional_antiaims.player_state == conditional_antiaims.states.air_crouch or conditional_antiaims.player_state == conditional_antiaims.states.fakelag)))
 	
 	if is_manuals and Vars.AA.manuals.lag_options:get() == 'Always on' then
@@ -2995,6 +3080,24 @@ conditional_antiaims.new_meta_defensive = safecall('new_meta_defensive', true, f
 	end
 end)
 
+conditional_antiaims.delay_latest_yaw = 0
+conditional_antiaims.delay_switch = safecall('delay_switch', true, function(new_config)
+   	if (conditional_antiaims.manual_dir == -90 or conditional_antiaims.manual_dir == 90) then 
+        return 
+    end
+	if globals.tickcount() % (new_config.delay_ticks * 2) == 0 then
+		conditional_antiaims.swap = not conditional_antiaims.swap
+	end
+	
+    if new_config.body_yaw == 'Advanced' then
+        new_config.body_yaw = 'Static'
+		if conditional_antiaims.chokedcommands == 0 then
+        	conditional_antiaims.delay_latest_yaw = (conditional_antiaims.swap and new_config.left_yaw_offset or new_config.right_yaw_offset)
+        	new_config.body_yaw_offset = conditional_antiaims.swap and -1 or 1
+		end
+		new_config.yaw_offset = conditional_antiaims.delay_latest_yaw
+    end
+end)
 
 conditional_antiaims.delay_latest_yaw = 0
 conditional_antiaims.delay_switch = safecall('delay_switch', true, function(new_config)
