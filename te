@@ -1190,191 +1190,72 @@ group:label(' ')
 conditional_antiaims.conditions_names = {'Shared', 'Standing', 'Moving', 'Slowwalk', 'Crouch', 'Moving & Crouch', 'Air', 'Air & Crouch', 'Freestand', 'Fakelag', 'On Use'}
 local Vars = {
     Home = {
-    -- ▼▼▼ FAKE LAG СЕКЦИЯ СКРИПТА (в Home вкладке) ▼▼▼
-    group:label('\vNocthra\r'),
-    group:combobox('Tabs', {'Home', 'Misc', 'AA'}, 0),
-    group:label('[\vnocthra\r] Information'),
-    group:label('User: \v' .. information.user),
-    group:label('Update: \vToday'),
-    group:label(' '),
-
-    -- ▼▼▼ ANTI-AIMBOT ANGLES СЕКЦИЯ СКРИПТА (в Home вкладке) ▼▼▼
-    group:label('[\vnocthra\r] Config System'),
-    list = group:listbox('Configs', config_system.config_list(), 0),
-    name = group:textbox('Config name', ''),
-    load = group:button('Load', function()
-        local name = Vars.Home.name:get()
-        if name ~= '' then config_system.load(name) end
-    end),
-    save = group:button('Save', function()
-        local name = Vars.Home.name:get()
-        if name ~= '' then config_system.save(name) end
-    end),
-    delete = group:button('Delete', function()
-        local name = Vars.Home.name:get()
-        if name ~= '' then config_system.delete(name) end
-    end),
-
-    -- Кнопка Cloud
-    group:label(' '),
-    cloud_toggle = group:button('☁️ Show Cloud', function()
-        local show_cloud = not Vars.Home.cloud_presets.visible
-        
-        -- Переключаем видимость
-        Vars.Home.cloud_presets:set_visible(show_cloud)
-        Vars.Home.cloud_load:set_visible(show_cloud)
-        Vars.Home.cloud_save:set_visible(show_cloud)
-        
-        -- Скрываем/показываем основную кфг
-        Vars.Home.list:set_visible(not show_cloud)
-        Vars.Home.name:set_visible(not show_cloud)
-        Vars.Home.load:set_visible(not show_cloud)
-        Vars.Home.save:set_visible(not show_cloud)
-        Vars.Home.delete:set_visible(not show_cloud)
-        
-        -- Меняем текст кнопки
-        Vars.Home.cloud_toggle:set(show_cloud and '← Back to Config' or '☁️ Show Cloud')
-    end),
-
-    -- Cloud система (скрыта)
-    cloud_presets = group:listbox('Cloud Presets', {'*Default', '*Legit', '*Rage', '*HvH', '*Scout', '*Awp'}, 0),
-    cloud_load = group:button('Load Cloud', function()
-        local preset = Vars.Home.cloud_presets:get()
-        client.color_log(255, 255, 0, '[Nocthra] Loading cloud: ' .. preset)
-    end),
-    cloud_save = group:button('Save Cloud', function()
-        client.color_log(255, 255, 0, '[Nocthra] Saving to cloud...')
-    end),
-    group:label(' '),
-
-    -- ▼▼▼ OTHER СЕКЦИЯ СКРИПТА (в Home вкладке) ▼▼▼
-    group:label('[\vnocthra\r] Social Links'),
-    youtube = group:button('YouTube', function()
-        client.exec('start https://youtube.com')
-    end),
-    discord = group:button('Discord', function()
-        client.exec('start https://discord.gg/nocthra')
-    end)
-	}
-} 
-
-
-    Misc = {
-        group:label('[\vnocthra\r] Visuals'),
-        screen_indicators = group:checkbox('•  Screen indicators', { 142, 165, 255 }),
-        screen_indicators_settings = {
-            glow = group:checkbox('Indicators  »  Glow behind')
-        },
-        screen_indicators_settings_dmg = _DEBUG and group:checkbox('•  Min. damage above crosshair') or nil,
-        manual_arrows = group:checkbox('•  Manual arrows'),
-        manual_arrows_settings = {
-            settings = group:combobox('Arrows  »  Settings' , {'Default', 'Invictus', 'Teamskeet'}),
-            adding = group:slider('Arrows  »  Adding\nDEF', 0, 100, 35),
-            accent_color = group:label('Arrows  »  Accent color\nDEF', { 113, 138, 187 }),
-            teamskeet_adding = group:slider('Arrows  »  Adding\nTS', 4, 100, 42),
-            teamskeet_accent_color = group:label('Arrows  »  Accent color\nTS', { 175, 255, 0 }),
-            teamskeet_desync_accent_color = group:label('Arrows  »  Desync color\nTS', { 0, 200, 255 }),
-
-            invictus_dynamic = group:checkbox("Arrows  »  Dynamic mode"),
-
-            getzeus_adding = group:slider('Arrows  »  Adding\nGT', 4, 100, 44),
-            getzeus_accent_color = group:label('Arrows  »  Accent color\nGT', { 111, 111, 220 }),
-            getzeus_second_accent_color = group:label('Arrows  »  Second color\nGT', { 255, 255, 255 })
-        },
-        alt_watermark = group:combobox('•  Watermark', {'Default', 'Modern'}),
-        alt_watermark_settings = {
-            color = group:color_picker('•  Position', 255, 175, 175, 0.8),
-            pos = group:combobox('•  Position', {'Bottom', 'Left', 'Right'}),
-        },
-
-        crosshair_hitlog = _DEBUG and group:checkbox('•  Crosshair logger') or nil,
-        crosshair_settings = 
-        _DEBUG and {
-            move = group:checkbox('Crosshair  »  Move with scope'),
-            hit_color = group:label('Crosshair  »  Hit color', { 142, 165, 255 }),
-            miss_color = group:label('Crosshair  »  Miss color', { 255, 180, 0 }),    
-        } or nil,
-
-        hitlog_console = _DEBUG and group:checkbox('•  Console logger') or nil,
-        hitlogger_settings = 
-        _DEBUG and {
-            prefix_color = group:label('Console  »  Prefix color', { 142, 165, 255 }),
-            hit_color = group:label('Console  »  Hit color', { 159, 202, 43 }),
-            miss_color = group:label('Console  »  Miss color', { 255, 180, 0 }),    
-        } or nil,
-
-        show_hitrate = group:checkbox('•  Show hitrate'),
-        reset_hitrate = group:button('Reset hitrate', function() end),
-	
+        group:label('\vNocthra\r'),
+        group:combobox('Tabs', {'Home', 'Misc', 'AA'}, 0),
+        group:label('[\vnocthra\r] Information'),
+        group:label('User: \v' .. information.user),
+        group:label('Update: \vToday'),
         group:label(' '),
-        group:label('[\vnocthra\r] Miscellaneous'),
         
-        fast_ladder = group:checkbox('•  Fast ladder'),
-        fast_ladder_settings = {
-            group:multiselect('Fast ladder  »  Settings' , {'Ascending', 'Descending'})
-        },
-        chat_spammer = group:checkbox('•  Chat spammer'),
-        deathsay = group:checkbox('•  On death spammer'),
-        
-        anim_breakers = group:checkbox('\aB6B665FF•  Animation breakers'),
-        anim_breakers_settings = {
-            breaked_legs = group:combobox('Animations  »  Breaked legs', {'Disabled', 'Static', 'Jitter', 'Allah', 'Blend'}),
-            air = group:combobox('Animations  »  Air legs', {'Disabled', 'Static', 'Haram'}),
-            pitch = group:checkbox('Animations  »  Pitch on land')
-        },
+        group:label('[\vnocthra\r] Presets'),
+        list = group:listbox('Configs', config_system.config_list(), 0),
+        name = group:textbox('Config name', ''),
+        load = group:button('Load', function()
+            local name = Vars.Home.name:get()
+            if name ~= '' then config_system.load(name) end
+        end),
+        save = group:button('Save', function()
+            local name = Vars.Home.name:get()
+            if name ~= '' then config_system.save(name) end
+        end),
+        delete = group:button('Delete', function()
+            local name = Vars.Home.name:get()
+            if name ~= '' then config_system.delete(name) end
+        end),
+        import = group:button('Import from clipboard', function()
+            config_system.import_settings()
+        end),
+        export = group:button('Export to clipboard', function()
+            config_system.export_settings()
+        end),
 
-        -- ТОЛЬКО RESOLVER И PREDICT В САМОМ НИЗУ
-        smart_resolver = group:checkbox('•  Smart resolver'),
-        prediction = group:checkbox('•  Prediction')
-},
+        group:label(' '),
+        group:label('[\vnocthra\r] Cloud System'),
+        cloud_toggle = group:button('☁️ Show Cloud', function()
+            local show_cloud = not Vars.Home.cloud_presets.visible
+            Vars.Home.cloud_presets:set_visible(show_cloud)
+            Vars.Home.cloud_load:set_visible(show_cloud)
+            Vars.Home.cloud_save:set_visible(show_cloud)
+            Vars.Home.list:set_visible(not show_cloud)
+            Vars.Home.name:set_visible(not show_cloud)
+            Vars.Home.load:set_visible(not show_cloud)
+            Vars.Home.save:set_visible(not show_cloud)
+            Vars.Home.delete:set_visible(not show_cloud)
+            Vars.Home.import:set_visible(not show_cloud)
+            Vars.Home.export:set_visible(not show_cloud)
+            Vars.Home.cloud_toggle:set(show_cloud and '← Back to Config' or '☁️ Show Cloud')
+        end),
+        cloud_presets = group:listbox('Cloud Presets', {'*Default', '*Legit', '*Rage', '*HvH', '*Scout', '*Awp'}, 0),
+        cloud_load = group:button('Load Cloud', function()
+            local preset = Vars.Home.cloud_presets:get()
+            client.color_log(255, 255, 0, '[Nocthra] Loading cloud: ' .. preset)
+        end),
+        cloud_save = group:button('Save Cloud', function()
+            client.color_log(255, 255, 0, '[Nocthra] Saving to cloud...')
+        end),
 
-    AA = {
-		group:label('[\vnocthra\r] Settings'),
-		enable = group:checkbox('•  Enable anti-aims'),
-		edge_yaw = group:checkbox('•  Edge yaw', 0x00),
-		freestanding = group:checkbox('•  Freestanding', 0x00),
-		avoid_backstab = _DEBUG and group:checkbox('•  Avoid backstab') or nil,
-		manuals = {
-			enable = group:checkbox('•  Enable manuals'),
-			left = group:label('Manuals  »  Left side', 0x00),
-			right = group:label('Manuals  »  Right side', 0x00),
-			reset = group:label('Manuals  »  Reset sides', 0x00),
-			inverter = group:checkbox('Manuals  »  Inverter'),
-			manuals_over_fs = group:checkbox('Manuals  »  Over FS'),
-			lag_options = group:combobox('Manuals  »  Force defensive\nmanuals' , {'Default', 'Always on'}),
-			defensive_aa = group:checkbox('Manuals  »  Defensive AA\nmanuals'),
-			defensive_pitch = group:combobox('Manuals  »  Pitch\ndefensive_pitch\nmanuals', {'Disabled', 'Up', 'Zero', 'Random', 'Custom'}),
-			pitch_slider = group:slider('\ncustom_defensive_pitch\nmanuals', -89, 89, 0),
-			defensive_yaw = group:combobox('Manuals  »  Yaw\ndefensive_yaw\nmanuals', {'Disabled', 'Sideways', 'Opposite', 'Random', 'Spin', '3-Way', '5-Way', 'Custom'}),
-			yaw_slider = group:slider('\ncustom_defensive_yaw\nmanuals', -180, 180, 0)
-		
-		},
-
-		safe_functions = {
-			enable = group:checkbox('•  Enable safe functions'),
-			settings = group:multiselect('Safe  »  Functions', table.filter {_DEBUG and 'Head' or nil, 'Knife', 'Zeus'}),
-			head_settings = group:multiselect('Safe  »  Head settings', {'Height', 'High Distance'}),
-			lag_options = group:combobox('Safe  »  Force defensive\nsafe' , {'Default', 'Always on'}),
-			defensive_aa = group:checkbox('Safe  »  Defensive AA\nsafe'),
-			defensive_pitch = group:combobox('Safe  »  Pitch\ndefensive_pitch\nsafe', {'Disabled', 'Up', 'Zero', 'Random', 'Custom'}),
-			pitch_slider = group:slider('\ncustom_defensive_pitch\nsafe', -89, 89, 0),
-			defensive_yaw = group:combobox('Safe  »  Yaw\ndefensive_yaw\nsafe', {'Disabled', 'Sideways', 'Opposite', 'Random', 'Spin', '3-Way', '5-Way', 'Custom'}),
-			yaw_slider = group:slider('\ncustom_defensive_yaw\nsafe', -180, 180, 0)
-		},
-
-		air_exploit = _DEBUG and {
-			enable = group:checkbox('\aB6B665FF•  Enable aerobic exploit', 0x00),
-			while_visible = group:checkbox('Exploit  »  While enemy visible'),
-			exp_tick = group:slider('Exploit  »  Delay', 2, 30, 10, 1, 't')
-		} or nil,
-
-    empty_list = group:label(' '),
-    Settings = {
-        group:label('[\vnocthra\r] Builder'),
-        condition_combo = group:combobox('State', conditional_antiaims.conditions_names)
+        group:label(' '),
+        group:label('[\vnocthra\r] Social Links'),
+        youtube = group:button('YouTube', function()
+            client.exec('start https://youtube.com')
+        end),
+        discord = group:button('Discord', function()
+            client.exec('start https://discord.gg/nocthra')
+        end)
     } 
 }
-}
+
+initDatabase()  
 
 -- Скрываем cloud при старте
 Vars.Home.cloud_presets:set_visible(false)
